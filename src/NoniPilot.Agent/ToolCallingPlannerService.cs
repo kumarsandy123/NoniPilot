@@ -438,6 +438,17 @@ public sealed class ToolCallingPlannerService : IPlannerService
     }
 
     /// <summary>
+    /// "Clear Chat" needs to forget both copies of the conversation - the in-memory list this
+    /// instance replays back to the model every turn, and the on-disk ConversationMemoryStore
+    /// file that would otherwise restore the "cleared" history right back on the next relaunch.
+    /// </summary>
+    public void ClearHistory()
+    {
+        _conversationHistory.Clear();
+        ConversationMemoryStore.Save(new List<RememberedExchange>());
+    }
+
+    /// <summary>
     /// Converts the (already-trimmed) in-memory history back into the plain Command/Answer pairs
     /// ConversationMemoryStore persists - _conversationHistory only ever contains alternating
     /// User/Assistant messages (see CommitToHistory), so pairing them up two-at-a-time is safe.

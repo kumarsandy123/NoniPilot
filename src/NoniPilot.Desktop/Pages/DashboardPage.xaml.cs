@@ -45,6 +45,7 @@ public partial class DashboardPage : UserControl, INavigablePage
         _screenCapture.FrameCaptured += bitmap => Dispatcher.BeginInvoke(() => PreviewImage.Source = bitmap);
         _services.GestureEngine.StateChanged += OnGestureStateChanged;
         _services.Commands.VoiceModeChanged += OnVoiceModeChanged;
+        VoiceWidget.Attach(_services.Commands);
 
         MicPill.State = StatusPillState.Connected;
         MicPill.Text = "Mic Ready";
@@ -236,7 +237,14 @@ public partial class DashboardPage : UserControl, INavigablePage
         if (isOn)
         {
             var calibration = GestureCalibrationStore.Load();
-            _services.GestureEngine.Start(calibration, _services.Commands.StopEverything);
+            if (!_services.GestureEngine.Start(calibration, _services.Commands.StopEverything))
+            {
+                // Start() doesn't raise StateChanged on failure (nothing actually started), so
+                // the toggle would otherwise be left showing "on" for an engine that isn't
+                // running - reconcile it here and surface the real reason via the pill.
+                GestureModeToggle.IsOn = false;
+                GesturePill.Text = _services.GestureEngine.LastStartError ?? "Could not start camera";
+            }
         }
         else
         {

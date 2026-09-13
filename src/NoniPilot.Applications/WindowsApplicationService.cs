@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using NoniPilot.Domain.Interfaces;
 
 namespace NoniPilot.Applications;
@@ -115,6 +116,19 @@ public sealed class WindowsApplicationService : IApplicationService
             return false;
         }
 
+        // Explorer is a single shared process that also hosts the desktop/taskbar shell - its
+        // MainWindowHandle (whatever the OS considers "the" window for that PID) is NOT
+        // reliably one of the actual folder windows the user opened, so CloseMainWindow() below
+        // was either silently targeting the wrong window or being refused outright by the shell
+        // (observed live 2026-09-13: "close explorer" reported failure every time). Folder
+        // windows are their own top-level "CabinetWClass" windows regardless of which process
+        // hosts them, so close them directly by window class instead of by process.
+        if (string.Equals(process.ProcessName, "explorer", StringComparison.OrdinalIgnoreCase))
+        {
+            process.Dispose();
+            return await CloseExplorerFolderWindowsAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         using (process)
         {
             if (process.HasExited)
@@ -159,12 +173,92 @@ public sealed class WindowsApplicationService : IApplicationService
 
         return Task.FromResult(apps);
     }
+
+    /// <summary>
+    /// Finds every open File Explorer folder window ("CabinetWClass" - distinct from the
+    /// desktop/taskbar shell windows, which are never this class) and asks each to close via
+    /// WM_CLOSE, then confirms they actually disappeared rather than assuming the post succeeded.
+    /// </summary>
+    private static async Task<bool> CloseExplorerFolderWindowsAsync(CancellationToken cancellationToken)
+    {
+        var handles = NativeWindow.FindWindowsByClass("CabinetWClass");
+        if (handles.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var hWnd in handles)
+        {
+            NativeWindow.PostClose(hWnd);
+        }
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (DateTime.UtcNow < deadline && !cancellationToken.IsCancellationRequested)
+        {
+            if (handles.All(h => !NativeWindow.Exists(h)))
+            {
+                return true;
+            }
+
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+        }
+
+        return handles.All(h => !NativeWindow.Exists(h));
+    }
 }
 
 internal static class NativeWindow
 {
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint WM_CLOSE = 0x0010;
+
     public static bool SetForeground(IntPtr hWnd) => SetForegroundWindow(hWnd);
+
+    public static bool Exists(IntPtr hWnd) => IsWindow(hWnd);
+
+    public static void PostClose(IntPtr hWnd) => PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+
+    public static List<IntPtr> FindWindowsByClass(string className)
+    {
+        var found = new List<IntPtr>();
+        var buffer = new StringBuilder(256);
+
+        EnumWindows((hWnd, _) =>
+        {
+            if (!IsWindowVisible(hWnd))
+            {
+                return true;
+            }
+
+            buffer.Clear();
+            GetClassName(hWnd, buffer, buffer.Capacity);
+            if (string.Equals(buffer.ToString(), className, StringComparison.Ordinal))
+            {
+                found.Add(hWnd);
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return found;
+    }
 }

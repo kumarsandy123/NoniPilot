@@ -22,6 +22,24 @@ public enum RecognizedGesture
 
     ThumbsUp,
     ThumbsDown,
+
+    /// <summary>A fast, sustained sideways hand sweep (not pinching/fisted) - switches to the next virtual desktop.</summary>
+    SwipeRight,
+
+    /// <summary>The mirror of SwipeRight - switches to the previous virtual desktop.</summary>
+    SwipeLeft,
+
+    /// <summary>A held pinch pulled toward the camera (hand grew larger, tracked point roughly stationary) - zooms in.</summary>
+    ZoomIn,
+
+    /// <summary>A held pinch pushed away from the camera (hand grew smaller, tracked point roughly stationary) - zooms out.</summary>
+    ZoomOut,
+
+    /// <summary>Index+middle extended, ring+pinky curled ("peace sign") - closes whichever window is currently focused.</summary>
+    CloseWindow,
+
+    /// <summary>Index+middle+ring extended, pinky curled - opens a new File Explorer window.</summary>
+    OpenExplorer,
 }
 
 /// <summary>One classified frame: the gesture recognized (if any), the tracked point in [0,1] ROI-normalized coordinates, and confidence.</summary>

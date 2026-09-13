@@ -84,7 +84,7 @@ public sealed class AppServices
         SpeechToText = VoiceServiceFactory.BuildSpeechToText();
 
         ActionRunner = new PolicyGatedActionRunner(Policy, Confirmation, Audit);
-        GestureEngine = new GestureEngineController(ComputerControl);
+        GestureEngine = new GestureEngineController(ComputerControl, Applications);
         FaceRecognition = new FaceRecognitionController(GestureEngine);
         Commands = new CommandProcessor(this);
         AutomationRunner = new AutomationSequenceRunner(this);

@@ -2,32 +2,80 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:NoniPilot.Desktop.Controls">
+    <!-- The shell (MainWindow) now hosts one shared GalaxyBackground behind the whole app
+         (header, sidebar, and every page's content area), not a separate one per page - avoids
+         duplicating the star field/rendering cost here. -->
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,20">
         <StackPanel>
 
-            <!-- Hero -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
+            <!-- Hero - background is a real cropped photo (from the user's own reference art,
+                 clipped to a text-free region of just the galaxy/planets) rather than a
+                 hand-drawn vector approximation, per explicit request to look "exactly like"
+                 that reference. A dark scrim sits between the image and the text so the
+                 existing title/tagline/quote stay fully readable over the brighter parts of the
+                 image (the galaxy core in particular). -->
+            <Border Style="{StaticResource Card}" Height="220" Margin="0,0,0,16" Padding="0" ClipToBounds="True">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                    <!-- A slow zoom+pan ("Ken Burns") gives the scene a "running" feel per
+                         explicit request - the pan specifically so the planet visibly drifts
+                         through frame, not just breathes in place. Measured live via a clean A/B
+                         (same build, trigger removed vs. present): ~91% CPU static vs ~110-113%
+                         animated with zoom alone - a real ~20-point cost, not zero, but far
+                         smaller than the earlier vector-gradient mistake (~50+ points for
+                         animating 4 large gradient shapes) since this is one already-rasterized
+                         bitmap's Transform, not a gradient brush being re-rendered. Scaled up to
+                         1.15x+ up front specifically to give the pan room to move without ever
+                         exposing an empty edge. -->
+                    <Image Source="/Assets/HeroGalaxy.png" Stretch="UniformToFill" RenderTransformOrigin="0.5,0.5">
+                        <Image.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="HeroImageZoom" ScaleX="1.15" ScaleY="1.15" />
+                                <TranslateTransform x:Name="HeroImagePan" X="0" Y="0" />
+                            </TransformGroup>
+                        </Image.RenderTransform>
+                        <Image.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HeroImageZoom" Storyboard.TargetProperty="ScaleX"
+                                                         From="1.15" To="1.25" Duration="0:00:40" AutoReverse="True" RepeatBehavior="Forever" />
+                                        <DoubleAnimation Storyboard.TargetName="HeroImageZoom" Storyboard.TargetProperty="ScaleY"
+                                                         From="1.15" To="1.25" Duration="0:00:40" AutoReverse="True" RepeatBehavior="Forever" />
+                                        <DoubleAnimation Storyboard.TargetName="HeroImagePan" Storyboard.TargetProperty="X"
+                                                         From="-45" To="45" Duration="0:00:40" AutoReverse="True" RepeatBehavior="Forever" />
+                                        <DoubleAnimation Storyboard.TargetName="HeroImagePan" Storyboard.TargetProperty="Y"
+                                                         From="-12" To="12" Duration="0:00:55" AutoReverse="True" RepeatBehavior="Forever" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Image.Triggers>
+                    </Image>
+                    <Border Background="#8A090B10" />
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="NoniPilot" FontSize="34" FontWeight="Bold" Foreground="{StaticResource Cyan}" />
-                        <TextBlock Text="Your Intelligent" FontSize="18" Foreground="{StaticResource TextPrimary}" />
-                        <TextBlock Text="Desktop Assistant" FontSize="18" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8" />
-                        <TextBlock Text="I can see. I can hear. I can do." Foreground="{StaticResource TextDim}" FontStyle="Italic" />
-                    </StackPanel>
+                    <Grid Margin="24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                    <Ellipse Grid.Column="1" Width="140" Height="140" Fill="{StaticResource HeroGlowGradient}" Effect="{StaticResource GlowCyan}" />
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="NoniPilot" FontSize="34" FontWeight="Bold" Foreground="{StaticResource Cyan}" />
+                            <TextBlock Text="Your Intelligent" FontSize="18" Foreground="{StaticResource TextPrimary}" />
+                            <TextBlock Text="Desktop Assistant" FontSize="18" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8" />
+                            <TextBlock Text="I can see. I can hear. I can do." Foreground="{StaticResource TextDim}" FontStyle="Italic" />
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" MaxWidth="260">
-                        <TextBlock x:Name="QuoteText" Foreground="{StaticResource TextDim}" FontStyle="Italic" TextWrapping="Wrap" TextAlignment="Right" FontSize="15" />
-                    </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" MaxWidth="260">
+                            <TextBlock x:Name="QuoteText" Foreground="{StaticResource TextDim}" FontStyle="Italic" TextWrapping="Wrap" TextAlignment="Right" FontSize="15" />
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
+
+            <!-- Sci-fi voice-listening widget - real state (StatusMessage/VoiceModeActive/
+                 WakeWordModeActive), not decorative theater. Wired via Attach() in code-behind. -->
+            <controls:VoiceStatusWidget x:Name="VoiceWidget" Margin="0,0,0,16" />
 
             <!-- Feature cards - each navigates to the page that actually backs it -->
             <UniformGrid Columns="6" Margin="0,0,0,16">

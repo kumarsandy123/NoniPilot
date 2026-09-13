@@ -20,6 +20,7 @@ public partial class GestureControlPage : UserControl, INavigablePage
     private readonly AppServices _services;
     private bool _previewAttached;
     private readonly DispatcherTimer _faceStatusTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _diagnosticsTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
     public GestureControlPage(AppServices services)
     {
@@ -44,6 +45,9 @@ public partial class GestureControlPage : UserControl, INavigablePage
         _faceStatusTimer.Tick += (_, _) => UpdateFaceStatusText();
         _faceStatusTimer.Start();
         UpdateFaceStatusText();
+
+        _diagnosticsTimer.Tick += (_, _) => UpdateDiagnosticsText();
+        _diagnosticsTimer.Start();
     }
 
     public void OnNavigatedTo()
@@ -120,8 +124,34 @@ public partial class GestureControlPage : UserControl, INavigablePage
 
         if (!_services.GestureEngine.Start(calibration, _services.Commands.StopEverything))
         {
-            StatusText.Text = "Could not start the camera.";
+            StatusText.Text = _services.GestureEngine.LastStartError is { } error
+                ? $"Could not start the camera: {error}"
+                : "Could not start the camera.";
         }
+    }
+
+    private void UpdateDiagnosticsText()
+    {
+        if (!_services.GestureEngine.IsRunning)
+        {
+            DiagnosticsText.Text = string.Empty;
+            return;
+        }
+
+        var frames = _services.GestureEngine.FramesProcessed;
+        var hands = _services.GestureEngine.HandDetections;
+        var text = $"Frames processed: {frames} | Hand detected in: {hands}";
+
+        if (_services.GestureEngine.LastDetectionError is { } error)
+        {
+            text += $" | Detection error: {error}";
+        }
+        else if (frames > 30 && hands == 0)
+        {
+            text += " | No hand seen yet - make sure your hand is centered in the preview and well lit.";
+        }
+
+        DiagnosticsText.Text = text;
     }
 
     private void SaveCalibration_Click(object sender, RoutedEventArgs e)

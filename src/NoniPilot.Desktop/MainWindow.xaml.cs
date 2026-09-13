@@ -37,7 +37,18 @@ public partial class MainWindow : Window
 
         _services.ProviderChanged += OnProviderChanged;
         _services.ProviderFellBack += (from, reason) => Dispatcher.Invoke(() => StatusText.Text = $"'{from}' unavailable ({reason}) - trying next...");
-        _services.Commands.StatusChanged += () => Dispatcher.Invoke(() => StatusText.Text = _services.Commands.StatusMessage);
+        // The passive "Listening for 'Hey Noni'..." status is now shown by the dedicated
+        // VoiceStatusWidget on the Dashboard instead - showing it here too, on every page, all
+        // the time wake-word mode is on, was redundant clutter now that a richer visual exists
+        // for it. Other real statuses (Thinking, Transcribing, errors, provider fallback) still
+        // update this header pill normally, since those aren't shown anywhere else.
+        _services.Commands.StatusChanged += () => Dispatcher.Invoke(() =>
+        {
+            if (!_services.Commands.StatusMessage.StartsWith("Listening for", StringComparison.Ordinal))
+            {
+                StatusText.Text = _services.Commands.StatusMessage;
+            }
+        });
         _services.RequestNavigate = key => Dispatcher.Invoke(() => SelectNav(key));
 
         NavList.ItemsSource = BuildNavItems();

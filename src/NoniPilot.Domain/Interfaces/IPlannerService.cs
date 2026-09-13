@@ -13,4 +13,10 @@ public interface IPlannerService
         string naturalLanguageCommand,
         Action<AgentTask>? onTaskUpdated = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Forgets the running conversation - both this instance's in-memory context and
+    /// whatever of it was persisted to disk - so a "Clear Chat" action genuinely starts fresh
+    /// rather than clearing only the visible transcript while the AI still silently remembers
+    /// everything said before.</summary>
+    void ClearHistory();
 }

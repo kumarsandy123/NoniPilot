@@ -21,6 +21,22 @@ public sealed class WebcamGestureEngine : IGestureEngine
 
     public bool IsRunning { get; private set; }
 
+    private long _framesProcessed;
+    private long _handDetections;
+    private volatile string? _lastDetectionError;
+
+    /// <summary>Frames processed since Start() - a live sign the camera is actually delivering
+    /// frames, independent of whether any of them contained a hand.</summary>
+    public long FramesProcessed => Interlocked.Read(ref _framesProcessed);
+
+    /// <summary>How many of those frames had a hand detected in them.</summary>
+    public long HandDetections => Interlocked.Read(ref _handDetections);
+
+    /// <summary>The most recent exception IHandLandmarkDetector.Detect threw, if any. Previously
+    /// every such exception was silently swallowed every single frame with no trace anywhere -
+    /// exactly the kind of failure that looks identical to "gestures just don't do anything".</summary>
+    public string? LastDetectionError => _lastDetectionError;
+
     public event EventHandler<GestureFrame>? GestureDetected;
 
     /// <summary>
@@ -52,6 +68,9 @@ public sealed class WebcamGestureEngine : IGestureEngine
         }
 
         _classifier.Reset();
+        Interlocked.Exchange(ref _framesProcessed, 0);
+        Interlocked.Exchange(ref _handDetections, 0);
+        _lastDetectionError = null;
         _cts = new CancellationTokenSource();
         IsRunning = true;
         _loopTask = Task.Run(() => CaptureLoop(_cts.Token));
@@ -116,6 +135,7 @@ public sealed class WebcamGestureEngine : IGestureEngine
             }
 
             lastProcessedUtc = now;
+            Interlocked.Increment(ref _framesProcessed);
 
             using (var previewFrame = frame.Clone())
             {
@@ -129,14 +149,17 @@ public sealed class WebcamGestureEngine : IGestureEngine
             try
             {
                 result = _detector.Detect(cropped);
+                _lastDetectionError = null;
             }
-            catch
+            catch (Exception ex)
             {
+                _lastDetectionError = ex.Message;
                 continue;
             }
 
             if (result.HandDetected)
             {
+                Interlocked.Increment(ref _handDetections);
                 var gestureFrame = _classifier.Classify(result.Landmarks);
                 GestureDetected?.Invoke(this, gestureFrame);
             }

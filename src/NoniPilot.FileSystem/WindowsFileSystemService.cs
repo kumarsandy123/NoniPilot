@@ -89,16 +89,18 @@ public sealed class WindowsFileSystemService : IFileSystemService
     {
         GuardNotProtected(destinationPath);
 
+        // A full recursive folder copy is real, potentially long-running I/O work (measured
+        // live: a real "dev" folder with node_modules/.git can take minutes) - run it on a
+        // background thread rather than blocking whatever thread awaits this Task, and actually
+        // honor cancellationToken (previously ignored entirely, meaning STOP had zero effect on
+        // an in-progress copy - a real, separate bug from the one this fixes).
         if (Directory.Exists(sourcePath))
         {
-            CopyDirectoryRecursive(sourcePath, destinationPath);
-        }
-        else
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath) ?? ".");
-            File.Copy(sourcePath, destinationPath, overwrite: false);
+            return Task.Run(() => CopyDirectoryRecursive(sourcePath, destinationPath, cancellationToken), cancellationToken);
         }
 
+        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath) ?? ".");
+        File.Copy(sourcePath, destinationPath, overwrite: false);
         return Task.CompletedTask;
     }
 
@@ -162,18 +164,31 @@ public sealed class WindowsFileSystemService : IFileSystemService
         }
     }
 
-    private static void CopyDirectoryRecursive(string sourceDir, string destDir)
+    /// <summary>
+    /// Measured live (2026-09-13): a first copy attempt into a new destination folder can leave
+    /// it partially populated if it's slow enough that the user (reasonably) assumes it failed
+    /// and asks again - the retry's CreateDirectory is a no-op (folder already exists), but the
+    /// old overwrite:false Copy would then throw "file already exists" on the very first file
+    /// that made it over last time, aborting the whole retry with no useful message. A folder
+    /// copy is inherently a "make destination match source" operation - overwriting stale
+    /// partial content from an earlier attempt is the correct, expected behavior here, unlike a
+    /// single named-file copy (still overwrite:false above) where clobbering something
+    /// unexpected at the destination is a real risk worth refusing by default.
+    /// </summary>
+    private static void CopyDirectoryRecursive(string sourceDir, string destDir, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Directory.CreateDirectory(destDir);
 
         foreach (var file in Directory.EnumerateFiles(sourceDir))
         {
-            File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), overwrite: false);
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), overwrite: true);
         }
 
         foreach (var subDir in Directory.EnumerateDirectories(sourceDir))
         {
-            CopyDirectoryRecursive(subDir, Path.Combine(destDir, Path.GetFileName(subDir)));
+            CopyDirectoryRecursive(subDir, Path.Combine(destDir, Path.GetFileName(subDir)), cancellationToken);
         }
     }
 

@@ -21,11 +21,14 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <DockPanel Grid.Row="0" Margin="16,12">
-                            <Button x:Name="ToggleButton" DockPanel.Dock="Right" Content="Start Camera" Style="{StaticResource PillButton}"
-                                    Background="{StaticResource AccentGradient}" Foreground="White" Click="ToggleButton_Click" />
-                            <TextBlock x:Name="StatusText" Text="Camera off." Foreground="{StaticResource TextDim}" VerticalAlignment="Center" />
-                        </DockPanel>
+                        <StackPanel Grid.Row="0" Margin="16,12">
+                            <DockPanel>
+                                <Button x:Name="ToggleButton" DockPanel.Dock="Right" Content="Start Camera" Style="{StaticResource PillButton}"
+                                        Background="{StaticResource AccentGradient}" Foreground="White" Click="ToggleButton_Click" />
+                                <TextBlock x:Name="StatusText" Text="Camera off." Foreground="{StaticResource TextDim}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock x:Name="DiagnosticsText" Foreground="{StaticResource TextFaint}" FontSize="11" Margin="0,4,0,0" />
+                        </StackPanel>
                         <Border Grid.Row="1" Background="#171A21" MinHeight="320" Margin="16,0,16,16">
                             <Image x:Name="PreviewImage" Stretch="Uniform" />
                         </Border>
@@ -49,7 +52,7 @@
 
                         <Separator Margin="0,14" />
                         <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource TextFaint}"
-                                   Text="Point: move cursor. Pinch (thumb+index): click/drag. Open palm: release. Fist: emergency stop. Thumbs up/down are recognized but not yet wired to actions. Hold your hand roughly centered in the preview." />
+                                   Text="Point or open palm: move cursor - both track your hand, so cursor control works whether your hand is relaxed-open or pointing. Quick pinch (thumb+index touch then release right away): click, at wherever the cursor is. Pinch and hold while moving: drag - pick up a file/folder and drop it wherever you release. While pinched, pull your hand toward the camera to zoom in, or away to zoom out. Hand swept fast left/right: move the focused window to the next/previous connected monitor (requires more than one monitor to see an effect). Peace sign (index+middle up, others down): close the currently focused window - refuses to close NoniPilot's own window if that's what's focused. Three fingers up (index+middle+ring, pinky down): open a new File Explorer window. Fist: emergency stop. Thumbs up/down are recognized but not yet wired to actions. Hold your hand roughly centered in the preview, well lit." />
                     </StackPanel>
                 </Border>
             </Grid>

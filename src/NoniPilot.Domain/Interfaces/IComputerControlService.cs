@@ -38,6 +38,17 @@ public interface IComputerControlService
 
     Task<bool> FocusWindowAsync(string windowTitleContains, CancellationToken cancellationToken = default);
 
+    /// <summary>Ctrl+mouse-wheel - the OS-wide zoom gesture recognized by browsers, Explorer
+    /// (icon size), Office and image/PDF viewers. Positive deltaWheelClicks zooms in.</summary>
+    Task CtrlScrollAsync(int deltaWheelClicks, CancellationToken cancellationToken = default);
+
+    /// <summary>Moves the focused window to the next/previous connected monitor: Win+Shift+Right
+    /// for direction &gt; 0, Win+Shift+Left for direction &lt; 0.</summary>
+    Task MoveWindowToAdjacentMonitorAsync(int direction, CancellationToken cancellationToken = default);
+
+    /// <summary>True when the currently focused window belongs to this same process.</summary>
+    bool IsSelfForeground();
+
     /// <summary>
     /// Global kill switch (section 10/21.4): immediately stops any in-flight mouse/keyboard
     /// automation and releases held input state. Must work even if the agent loop is stuck.

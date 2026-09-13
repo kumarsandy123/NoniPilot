@@ -101,11 +101,23 @@ public sealed class OnnxHandLandmarkDetector : IHandLandmarkDetector, IDisposabl
                 landmarkValues[i * 3 + 2] / _inputSize));
         }
 
+        // Not every community ONNX export of this model normalizes its presence output to a
+        // [0,1] probability the way the original MediaPipe graph does - some emit the raw
+        // (unbounded) pre-sigmoid logit instead. A value outside [0,1] is unambiguously one of
+        // those, so it gets sigmoid-normalized before thresholding; a value already in range is
+        // used as-is. Without this, an export using the raw-logit convention would silently fail
+        // the presence check on every single frame - hands detected perfectly well geometrically,
+        // reported as "no hand" regardless, which looks identical to gesture control simply not
+        // working at all.
+        var presenceProbability = presence.Value is >= 0f and <= 1f
+            ? presence.Value
+            : 1f / (1f + MathF.Exp(-presence.Value));
+
         return new HandDetectionResult
         {
-            HandDetected = presence.Value > 0.5f,
+            HandDetected = presenceProbability > 0.4f,
             Landmarks = landmarks,
-            Confidence = presence.Value,
+            Confidence = presenceProbability,
         };
     }
 

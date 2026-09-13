@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -54,12 +55,18 @@ public partial class BrowserAutomationPage : UserControl, INavigablePage
         }
     }
 
-    private void Open(string url)
+    private void Open(string input)
     {
-        if (string.IsNullOrWhiteSpace(url))
+        if (string.IsNullOrWhiteSpace(input))
         {
             return;
         }
+
+        // Lets the URL box double as a "jump to bookmark" field - typing a saved bookmark's
+        // label (e.g. "Gmail") opens that bookmark's URL instead of being treated as a literal
+        // (and invalid) URL.
+        var byLabel = _bookmarks.FirstOrDefault(b => string.Equals(b.Label, input, StringComparison.OrdinalIgnoreCase));
+        var url = byLabel?.Url ?? input;
 
         _ = RunAsync(url);
     }
@@ -89,9 +96,27 @@ public partial class BrowserAutomationPage : UserControl, INavigablePage
 
         _bookmarks.Add(new BrowserBookmark(label, url));
         BrowserBookmarkStore.Save(_bookmarks);
-        BookmarksList.ItemsSource = null;
-        BookmarksList.ItemsSource = _bookmarks;
+        RefreshBookmarksList();
         NewBookmarkLabelBox.Clear();
         NewBookmarkUrlBox.Clear();
+    }
+
+    private void DeleteBookmark_Click(object sender, RoutedEventArgs e)
+    {
+        if (((Button)sender).Tag is not BrowserBookmark bookmark)
+        {
+            return;
+        }
+
+        _bookmarks.Remove(bookmark);
+        BrowserBookmarkStore.Save(_bookmarks);
+        RefreshBookmarksList();
+        StatusText.Text = $"Deleted bookmark \"{bookmark.Label}\".";
+    }
+
+    private void RefreshBookmarksList()
+    {
+        BookmarksList.ItemsSource = null;
+        BookmarksList.ItemsSource = _bookmarks;
     }
 }

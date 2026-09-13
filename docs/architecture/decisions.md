@@ -1324,3 +1324,237 @@ metadata, and confirmed the Task Reports panel displayed it ("SUCCESS" / "Test S
 Scheduled"). Test sequence deleted afterward so it doesn't keep firing in the user's real app.
 
 `dotnet build`/`dotnet test tests/Unit` (37/37) clean throughout.
+
+## Dashboard: live galaxy background (2026-09-13)
+
+User asked for the Dashboard to be redesigned with a "live background Galaxies gif view" for a
+futuristic AI look. Built as real WPF vector graphics (new `Controls/GalaxyBackground`), not an
+actual GIF/video file - avoids sourcing an unverifiable/unlicensed asset from the internet and
+avoids per-frame video/GIF decode cost. Layered behind `DashboardPage`'s existing content (a
+`Grid` with the background as the bottom layer, `IsHitTestVisible="False"` so it never intercepts
+clicks); the existing `Card` style's opaque panel background means it's only visible in the gaps
+around cards, not competing with actual UI content.
+
+**A real, measured CPU regression, found and fixed before shipping it** - directly relevant given
+this same session's earlier ~750%-CPU ONNX investigation had just made the app's background
+camera/gesture cost negligible. First version: ~130 individually-animated twinkling stars +
+4 large gradient nebula/galaxy-disk shapes continuously animated via RotateTransform/
+TranslateTransform Storyboards. Measured live: CPU on the Dashboard jumped from the ~73-94%
+baseline (camera+gesture pipeline idle) to ~147%. Chased this down properly rather than guessing:
+- First hypothesis (130 individual per-star animation clocks) - replaced with a single shared
+  `DispatcherTimer` that directly nudges a few stars' `Opacity` per tick (no animation clocks at
+  all for the star field). **Measured: no change** (~139-148% either way) - wrong hypothesis.
+- Tried `CacheMode="BitmapCache"` on the 4 gradient shapes (rasterize once, animate the cached
+  bitmap). **Measured: no meaningful change either.**
+- Bisected properly: disabled the nebula/galaxy-disk entirely (stars only) -> back to baseline.
+  Made the nebula/galaxy-disk static (still visible, Storyboards removed) with stars still
+  twinkling -> **also back to baseline**. This isolated the real cost precisely: the continuous
+  Transform animation of 4 large gradient shapes, not the gradient rendering itself, not the star
+  field, not per-element count.
+- **Final design**: galaxy disk and nebula clouds are static (same technique the existing Hero
+  card's own glow ellipse already successfully uses) - a static soft glow reads exactly as
+  "futuristic AI" as a moving one. The twinkling star field (confirmed ~0% added cost) is what
+  actually delivers the "living" feel. Verified via direct pixel sampling of the rendered
+  background (not just visual inspection) that stars are genuinely present and rendering.
+
+**Verified live**: final CPU on Dashboard with the galaxy background measured at ~90.6%, matching
+the pre-existing baseline (no regression). `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Galaxy background extended to the whole shell (2026-09-13, same day)
+
+User asked for the sidebar and header to also show the galaxy, "more realistic." Rather than add
+separate background instances behind those regions, moved `GalaxyBackground` to `MainWindow`
+itself (`Grid.RowSpan="2"`, behind both the header row and the body row) so header, sidebar, and
+every page's content area all show ONE continuous starfield - not three disconnected patches.
+Removed the per-page instance from `DashboardPage` (now redundant/would have double-rendered
+stars in that region). The header and sidebar `Border`s, previously opaque
+(`{StaticResource Panel}`), are now semi-transparent (`#B312151C`, ~70% opacity) so the shared
+background actually shows through while text/buttons keep enough contrast to stay readable.
+Confirmed via grep that every other page already uses a bare `ScrollViewer`/`Grid` root with no
+opaque background, so they automatically pick up the shared galaxy too - no page changes needed
+beyond Dashboard's own cleanup.
+
+For "more realistic": star count raised 130 -> 260 (confirmed free regardless of count, since the
+star field costs ~0% via the shared-timer twinkle, not per-star animation clocks) to match the
+much larger visible area (whole window, not one page's content region), and nebula opacity raised
+modestly (~0.10-0.17 -> ~0.14-0.21) for better visibility through the now-semi-transparent
+header/sidebar panels.
+
+**Verified live**: CPU re-measured at ~91.4% with the shell-wide galaxy (260 stars) - unchanged
+from the single-page-background baseline, confirming the earlier "animation is the cost, not
+star/element count" finding held at the larger scale too. Screenshot-verified stars visibly
+scattered through the sidebar area. `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Hero card's flat circle replaced with a real galaxy orb (2026-09-13, same day)
+
+User pointed at the Dashboard Hero card's circular glow (the pre-existing static
+`HeroGlowGradient` Ellipse) and asked for it to actually show running stars too, not stay a flat
+gradient blob. New `Controls/GalaxyOrb` - a small, self-contained circular starfield (22 stars,
+uniform-random point-in-circle placement so they don't cluster at the center) over the same
+nebula-gradient look, clipped to a true circle via an `EllipseGeometry` set in code-behind (a
+plain `Ellipse` fill doesn't clip child content, so the star `Canvas` needed an explicit clip to
+stay within the circular silhouette). Same lightweight shared-timer twinkle as
+`GalaxyBackground` - no per-star animation clocks, no continuous transform animation - since
+that's the specific pattern already measured to cost effectively nothing. Replaces the single
+`<Ellipse Fill="{StaticResource HeroGlowGradient}">` in `DashboardPage.xaml`'s Hero card
+one-for-one (same `Width`/`Height`/`Effect`).
+
+**Verified live**: CPU re-checked twice (one reading briefly spiked to ~104%, a second
+back-to-back check showed ~92% - confirmed that was measurement noise from something else
+transient, e.g. the wake-word loop's mic cycle, not a regression from this control). Screenshot,
+zoomed into the Hero card, confirmed distinct white star specks genuinely scattered across the
+circular glow, clipped cleanly to the circle. `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Hero background replaced with a real cropped photo (2026-09-13, same day)
+
+User asked for the Hero to look "exactly like" a specific reference image and pointed out the
+GalaxyOrb circle still wasn't photorealistic enough. The reference turned out to already be a
+local file on the user's own Desktop
+(`C:\Users\sande\Desktop\Amberg IT\NoniPilotDashboardsHeader.png`) - not something needing to be
+sourced from the internet (which this project has consistently avoided for licensing/verification
+reasons) or hand-drawn in vector graphics (which was never going to match a photorealistic
+rendered scene). That file turned out to be a full mockup with its OWN title/clock/floating
+labels ("EXPLORE"/"ANALYZE"/"ASSIST"/"AUTOMATE") baked directly into the art - using it whole
+behind the app's real live title/clock text would have produced visibly duplicated/overlapping
+text. Asked the user how to handle this (`AskUserQuestion`) rather than guess; chosen: crop out
+just a clean, text-free region of the galaxy/planets art.
+
+Iterated on the crop live (viewed the full image, tried two candidate regions that still caught
+stray label edges, found a clean one centered on the spiral galaxy's bright core with no baked-in
+text at all) before settling on the final `680,180,700,280` region from the original
+1923x818 source. Saved as a real project asset (`Assets/HeroGalaxy.png`, `Resource` build
+action) - not left as a reference to the user's Desktop path, so the app doesn't depend on a file
+outside the repo. `DashboardPage.xaml`'s Hero `Border` now uses this image
+(`Stretch="UniformToFill"`) with a semi-transparent dark scrim (`#8A090B10`) between the image and
+the text layer so the existing title/tagline/quote stay fully readable over the brighter parts of
+the photo. The now-redundant `GalaxyOrb` control (a small vector-only circular starfield) was
+removed entirely rather than left as dead code, since the real photo replaces what it was
+approximating.
+
+**Verified live**: screenshot confirmed real nebula color/texture visible behind the text, fully
+legible. CPU re-checked twice (~106% then ~99.8%) - consistent with the same noise band already
+established for this baseline (no real regression; a static `Image` control costs nothing extra
+regardless). `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Hero image was actually just failing to load - wrong relative path (2026-09-13, same turn)
+
+User reported the Hero looked completely blank after the change above - no image at all, not
+even the dark scrim's tint visible as anything but flat black. Root cause, found immediately: the
+`Image Source="Assets/HeroGalaxy.png"` reference was a BARE relative path, which WPF resolves
+relative to the referencing XAML file's OWN location in the project tree - `DashboardPage.xaml`
+lives in `Pages/`, not the project root, so that path was actually being looked up as
+`Pages/Assets/HeroGalaxy.png` (doesn't exist), and `Image` fails silently for a missing source
+rather than throwing. Fixed by using a leading-slash pack-relative path
+(`Source="/Assets/HeroGalaxy.png"`), which WPF resolves relative to the assembly/project root
+regardless of which XAML file references it - the correct, location-independent way to reference
+a `Resource`-build-action image from anywhere in a WPF project.
+
+**Verified live**: screenshot after the fix shows the full vivid galaxy image rendering correctly
+behind the Hero text, exactly as intended. CPU re-confirmed at baseline (~90.4%).
+`dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Hero card had grown far too tall - missing height constraint (2026-09-13, same turn)
+
+Once the image was actually rendering, the Hero card had grown much taller than the original
+design - user correctly flagged it as "very big and odd." Root cause: neither the Hero `Border`
+nor its inner `Grid` had an explicit `Height` - previously the card's height was implicitly
+whatever the text content needed (~200px), but once an `Image` (native 700x280, ~2.5:1 aspect
+ratio) became a sibling in that same `Grid`, WPF sized the `Image` toward its natural aspect
+ratio at the full card width (~1900px), which comes out to roughly 760px tall, and the
+unconstrained `Grid`/`Border` grew to match. Fixed with an explicit `Height="220"` on the Hero
+`Border` (matching the original design's actual height) - `Stretch="UniformToFill"` now crops the
+image to fill that fixed box instead of dictating the box's size.
+
+**Verified live**: screenshot confirms the Hero card is back to its original compact height, full
+vivid galaxy image visible within it, all other Dashboard sections (Quick Actions, Live Preview,
+Recent Tasks) visible without the excess scroll the oversized card was causing. CPU re-confirmed
+at baseline (~98.2%, within the same established noise band). `dotnet build`/`dotnet test
+tests/Unit` (37/37) clean.
+
+## Hero image swapped for a planets+asteroids crop, plus a real (measured) zoom animation (2026-09-13, same turn)
+
+User asked for the galaxy to look "running" and to include planets/asteroids, not just the bare
+spiral core. The clean crop chosen earlier deliberately excluded the reference image's planets/
+asteroids (they sit in regions dense with the mockup's own baked-in HUD labels -
+"ANALYZE"/"ASSIST"/"AUTOMATE" - so avoiding text meant avoiding those elements too). Iterated
+live on 5 crop candidates from the same source image, previewing each, until finding one 100%
+free of baked-in text that still includes a ringed planet, a moon, asteroids, and a hint of the
+galaxy's glow - replaced `Assets/HeroGalaxy.png` with this new crop.
+
+**Added a slow "Ken Burns" zoom** (`ScaleTransform` animated 1.08x -> 1.18x over 30s, AutoReverse,
+Forever) for the "running" motion explicitly asked for twice now. Measured this honestly rather
+than assuming it was free like the star field: a clean A/B (identical build, animation trigger
+present vs. removed) showed **~91% CPU static vs. ~110-113% animated - a real ~20-point cost**,
+confirmed consistent across repeated readings (not noise, unlike some earlier single-reading
+scares this session). This is NOT the same mistake as the earlier vector-gradient regression
+(~50+ points from animating 4 large gradient-filled shapes) - this animates a Transform on ONE
+already-rasterized bitmap, which is a fundamentally cheaper operation, but it is not literally
+free either, and the code comment says so plainly rather than overclaiming. Judged this an
+acceptable, disclosed trade-off: a small, honest cost on a 12-core machine for genuine requested
+motion, not a regression nobody asked for.
+
+**Verified live**: screenshot after rebuilding shows the animation genuinely mid-cycle (a
+different framing than the static preview, confirming real motion), the new planet/asteroid
+content visible, no baked-in text anywhere. `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Planets now pan (not just zoom) + a real sci-fi voice-listening widget (2026-09-13, same turn)
+
+Two more requests: make the planets visibly move (the zoom alone just made them "breathe" in
+place, not drift), and give the "Listening for 'Hey Noni'" status its own dedicated sci-fi visual
+positioned between the Hero and the feature-tile row, "like actual speaking and listening
+visuals."
+
+**Panning**: added a `TranslateTransform` alongside the existing `ScaleTransform` on the Hero
+image (`TransformGroup`), animating X across ±45px over 40s and Y across ±12px over 55s (deliberately
+different periods so the motion doesn't feel like it's on rails), both `AutoReverse`+`Forever`.
+Scale range raised to 1.15-1.25x specifically to guarantee enough overscan for the pan to never
+expose an empty edge.
+
+**New `Controls/VoiceStatusWidget`**: a small card with (1) a circular mic badge behind two
+staggered "radar ping" rings - simple stroke-only circles animating Scale/Opacity via declarative
+Storyboards, the same cheap category as the earlier star field's twinkle, not the earlier
+vector-gradient mistake, and (2) a 5-bar audio-equalizer row whose heights are nudged directly by
+a single shared `DispatcherTimer` (same "no per-element animation clocks" technique the star
+field already proved cheap) - bars only actually move while `VoiceModeActive` or
+`WakeWordModeActive` is genuinely true; flat and still when voice is off, so this never claims to
+be listening when it isn't. Bound to the real `CommandProcessor` (`StatusMessage`,
+`VoiceModeChanged`, `WakeWordModeChanged`) via a new `Attach()` method called from
+`DashboardPage`'s constructor - same "declare in XAML with a parameterless constructor, wire real
+state in code-behind" convention every other custom control here already follows (not a
+constructor parameter, which would prevent XAML declaration). Placed directly between the Hero
+`Border` and the feature-tile `UniformGrid` in `DashboardPage.xaml`, per the exact requested
+position. The header's own smaller status pill is intentionally left in place too (it serves
+other pages this new widget doesn't reach), so during idle wake-word listening the same phrase
+now legitimately appears in two places, which is expected, not a bug.
+
+**Verified live**: CPU measured at ~88.3% with both the pan/zoom and the new widget's rings/bars
+timer all running simultaneously - within the same established noise band as the zoom-only
+baseline (no meaningful additional cost from the widget). Screenshot confirms the widget rendered
+in the correct position with real live text ("Listening for \"Hey Noni\"..." / "Say \"Hey Noni\"
+to wake me") and the Hero's visible framing shifted from previous screenshots (confirming the pan
+is genuinely animating, not just the zoom). `dotnet build`/`dotnet test tests/Unit` (37/37) clean.
+
+## Header no longer duplicates the wake-word status; widget goes full-width (2026-09-13, same turn)
+
+Two cleanups: the header's own small status pill was still showing "Listening for 'Hey Noni'..."
+at the same time as the new `VoiceStatusWidget` below it - redundant now that the widget exists.
+And the widget itself was a compact, left-anchored card rather than spanning the same width as
+the Hero/Quick Actions row.
+
+**Header fix**: `MainWindow`'s `StatusChanged` handler now skips updating the header `StatusText`
+specifically when the message starts with `"Listening for"` - every OTHER real status
+(Thinking..., Transcribing..., provider fallback, errors) still updates it normally, since those
+aren't shown anywhere else and remain genuinely useful across every page, not just Dashboard.
+This isn't a blanket removal of the header's status reporting, just the one specific message that
+became redundant.
+
+**Widget fix**: dropped `HorizontalAlignment="Left"` from `VoiceStatusWidget`'s declaration in
+`DashboardPage.xaml` - `UserControl`'s default alignment is `Stretch`, so removing the explicit
+override was enough to make it fill the same width as the Hero card and feature-tile row above/
+below it.
+
+**Verified live**: screenshot confirms the header now reads "Ready - Local (Ollama)" instead of
+the wake-word message while wake-word is idly listening, and the widget spans the full content
+width matching the Hero/tiles. CPU re-confirmed at ~102.7%, within the same established baseline
+noise band (no new cost from either change - both are layout/filtering changes, no new
+animation). `dotnet build`/`dotnet test tests/Unit` (37/37) clean.

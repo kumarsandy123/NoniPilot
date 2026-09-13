@@ -84,6 +84,12 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern bool IsWindowVisible(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
     internal delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]

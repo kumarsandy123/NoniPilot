@@ -38,6 +38,9 @@ public sealed class WindowsComputerControlService : IComputerControlService
     private const ushort VkControl = 0x11;
     private const ushort VkMenu = 0x12; // Alt
     private const ushort VkShift = 0x10;
+    private const ushort VkLeftWin = 0x5B;
+    private const ushort VkLeft = 0x25;
+    private const ushort VkRight = 0x27;
 
     /// <summary>
     /// Flipped to true the instant EmergencyStop() runs. Checked between every incremental
@@ -191,6 +194,47 @@ public sealed class WindowsComputerControlService : IComputerControlService
         return Task.CompletedTask;
     }
 
+    public Task CtrlScrollAsync(int deltaWheelClicks, CancellationToken cancellationToken = default)
+    {
+        BeginAction();
+        SendVirtualKey(VkControl, keyUp: false);
+        const int wheelDelta = 120;
+        SendMouseEvent(MouseEventWheel, (uint)(deltaWheelClicks * wheelDelta));
+        SendVirtualKey(VkControl, keyUp: true);
+        return Task.CompletedTask;
+    }
+
+    public Task MoveWindowToAdjacentMonitorAsync(int direction, CancellationToken cancellationToken = default)
+    {
+        // Win+Shift+Right/Left - the real "move this window to the next connected monitor"
+        // shortcut. (Win+Ctrl+Right/Left, used here previously, switches virtual desktops
+        // instead - a different feature that doesn't move anything to another physical screen.)
+        BeginAction();
+        var arrow = direction >= 0 ? VkRight : VkLeft;
+
+        SendVirtualKey(VkLeftWin, keyUp: false);
+        SendVirtualKey(VkShift, keyUp: false);
+        SendVirtualKey(arrow, keyUp: false);
+        SendVirtualKey(arrow, keyUp: true);
+        SendVirtualKey(VkShift, keyUp: true);
+        SendVirtualKey(VkLeftWin, keyUp: true);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>True when the currently focused window belongs to this same process - used to
+    /// stop a gesture-driven "close window" from closing NoniPilot's own window.</summary>
+    public bool IsSelfForeground()
+    {
+        var hWnd = GetForegroundWindow();
+        if (hWnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        GetWindowThreadProcessId(hWnd, out var foregroundPid);
+        return foregroundPid == (uint)Environment.ProcessId;
+    }
+
     public Task<bool> FocusWindowAsync(string windowTitleContains, CancellationToken cancellationToken = default)
     {
         IntPtr found = IntPtr.Zero;
@@ -240,6 +284,7 @@ public sealed class WindowsComputerControlService : IComputerControlService
         SendVirtualKey(VkControl, keyUp: true);
         SendVirtualKey(VkMenu, keyUp: true);
         SendVirtualKey(VkShift, keyUp: true);
+        SendVirtualKey(VkLeftWin, keyUp: true);
     }
 
     /// <summary>Every public action starts here so a fresh action isn't silently poisoned by a stale stop flag.</summary>

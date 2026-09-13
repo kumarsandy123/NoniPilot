@@ -71,5 +71,11 @@ public partial class VoiceCommandsPage : UserControl, INavigablePage
 
     private void TalkButton_Click(object sender, System.Windows.RoutedEventArgs e) => _services.Commands.ToggleVoiceMode();
 
+    private void ClearChatButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        _services.Chat.Clear();
+        _services.Planner.ClearHistory();
+    }
+
     private void ScrollChatToBottom() => ChatScrollViewer.ScrollToEnd();
 }

@@ -22,6 +22,10 @@
             <controls:ToggleSwitch x:Name="WakeWordToggle" DockPanel.Dock="Right" Caption="Wake Word"
                                     ToolTip="When on, NoniPilot passively listens for &quot;Hey Noni&quot; / &quot;Jago Noni&quot; and starts the conversation automatically - no click needed."
                                     Toggled="WakeWordToggle_Toggled" />
+            <Button x:Name="ClearChatButton" DockPanel.Dock="Right" Content="Clear Chat" Style="{StaticResource PillButton}"
+                    Foreground="{StaticResource TextDim}" Padding="12,6" FontSize="12" Margin="0,0,14,0"
+                    ToolTip="Clears the visible transcript and makes NoniPilot forget the conversation so far."
+                    Click="ClearChatButton_Click" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Voice Commands" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
                 <TextBlock x:Name="EngineText" Foreground="{StaticResource TextDim}" FontSize="12" VerticalAlignment="Bottom" Margin="12,0,0,3" />
