@@ -1,0 +1,107 @@
+<UserControl x:Class="NoniPilot.Desktop.Pages.ComputerControlPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,20">
+        <StackPanel>
+            <TextBlock Text="Computer Control" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,16" />
+
+            <UniformGrid Columns="2" Rows="3">
+                <Border Style="{StaticResource Card}" Margin="0,0,8,12">
+                    <StackPanel>
+                        <TextBlock Text="Mouse move / click" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" x:Name="XBox" Text="500" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1" x:Name="YBox" Text="500" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="4,0,0,0" />
+                        </Grid>
+                        <ComboBox x:Name="ButtonCombo" Margin="0,0,0,8" SelectedIndex="0">
+                            <ComboBoxItem Content="Left" />
+                            <ComboBoxItem Content="Right" />
+                            <ComboBoxItem Content="Middle" />
+                        </ComboBox>
+                        <UniformGrid Columns="2">
+                            <Button Content="Move" Style="{StaticResource PillButton}" Margin="0,0,4,0" Click="Move_Click" />
+                            <Button Content="Click" Style="{StaticResource PillButton}" Margin="4,0,0,0"
+                                    Background="{StaticResource AccentGradient}" Foreground="White" Click="Click_Click" />
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="8,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Drag" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" x:Name="DragFromXBox" Text="300" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,4,4" />
+                            <TextBox Grid.Column="1" x:Name="DragFromYBox" Text="300" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="4,0,0,4" />
+                        </Grid>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" x:Name="DragToXBox" Text="700" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1" x:Name="DragToYBox" Text="700" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="4,0,0,0" />
+                        </Grid>
+                        <Button Content="Drag" Style="{StaticResource PillButton}" Click="Drag_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,8,12">
+                    <StackPanel>
+                        <TextBlock Text="Scroll" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <UniformGrid Columns="2">
+                            <Button Content="Scroll Up" Style="{StaticResource PillButton}" Margin="0,0,4,0" Click="ScrollUp_Click" />
+                            <Button Content="Scroll Down" Style="{StaticResource PillButton}" Margin="4,0,0,0" Click="ScrollDown_Click" />
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="8,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Focus window" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <TextBox x:Name="FocusBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                 BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8"
+                                 ToolTip="Text the window title contains" />
+                        <Button Content="Focus" Style="{StaticResource PillButton}" Click="Focus_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,8,12">
+                    <StackPanel>
+                        <TextBlock Text="Type text" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <TextBox x:Name="TypeTextBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                 BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8"
+                                 ToolTip="Types into whatever currently has keyboard focus" />
+                        <Button Content="Type" Style="{StaticResource PillButton}" Click="TypeText_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="8,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Send keys" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,4" />
+                        <TextBlock Text="^ = Ctrl, % = Alt, + = Shift, {NAME} for special keys (e.g. ^c, %{F4}, {ENTER})"
+                                   Foreground="{StaticResource TextFaint}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8" />
+                        <TextBox x:Name="SendKeysBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                 BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8" />
+                        <Button Content="Send" Style="{StaticResource PillButton}" Click="SendKeys_Click" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <TextBlock x:Name="StatusText" Foreground="{StaticResource TextDim}" Margin="0,4,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

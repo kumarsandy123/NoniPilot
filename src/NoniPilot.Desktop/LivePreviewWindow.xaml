@@ -1,0 +1,25 @@
+<Window x:Class="NoniPilot.Desktop.LivePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:NoniPilot.Desktop.Controls"
+        Title="NoniPilot - Live Preview" Height="720" Width="1100" MinHeight="300" MinWidth="400"
+        Background="{StaticResource Bg}" WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,0,1" Padding="16,10">
+            <DockPanel>
+                <controls:StatusPill DockPanel.Dock="Right" State="Connected" Text="Live" />
+                <TextBlock Text="🖥 Live Preview - drag this window to any monitor, maximize for full screen" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Background="#171A21">
+            <Image x:Name="PreviewImage" Stretch="Uniform" />
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NoniPilot.Domain\NoniPilot.Domain.csproj" />
+    <ProjectReference Include="..\NoniPilot.Agent\NoniPilot.Agent.csproj" />
+    <ProjectReference Include="..\NoniPilot.Policy\NoniPilot.Policy.csproj" />
+    <ProjectReference Include="..\NoniPilot.Audit\NoniPilot.Audit.csproj" />
+    <ProjectReference Include="..\NoniPilot.FileSystem\NoniPilot.FileSystem.csproj" />
+    <ProjectReference Include="..\NoniPilot.Applications\NoniPilot.Applications.csproj" />
+    <ProjectReference Include="..\NoniPilot.ComputerControl\NoniPilot.ComputerControl.csproj" />
+    <ProjectReference Include="..\NoniPilot.Verification\NoniPilot.Verification.csproj" />
+    <ProjectReference Include="..\NoniPilot.Voice\NoniPilot.Voice.csproj" />
+    <ProjectReference Include="..\NoniPilot.Gesture\NoniPilot.Gesture.csproj" />
+    <ProjectReference Include="..\NoniPilot.Browser\NoniPilot.Browser.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.1" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

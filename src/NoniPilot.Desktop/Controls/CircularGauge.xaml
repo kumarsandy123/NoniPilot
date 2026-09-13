@@ -1,0 +1,25 @@
+<UserControl x:Class="NoniPilot.Desktop.Controls.CircularGauge"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="110" Height="132">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Viewbox Grid.Row="0" Width="92" Height="92">
+            <Canvas Width="100" Height="100">
+                <Path x:Name="TrackPath" Stroke="{StaticResource PanelBorder}" StrokeThickness="10"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                <Path x:Name="ValuePath" StrokeThickness="10"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                <TextBlock x:Name="PercentText" Canvas.Left="0" Canvas.Top="36" Width="100" TextAlignment="Center"
+                           FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+            </Canvas>
+        </Viewbox>
+
+        <TextBlock x:Name="LabelText" Grid.Row="1" HorizontalAlignment="Center"
+                   Foreground="{StaticResource TextDim}" FontSize="12" Margin="0,6,0,0" />
+    </Grid>
+</UserControl>

@@ -1,0 +1,148 @@
+<UserControl x:Class="NoniPilot.Desktop.Pages.AutomationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:NoniPilot.Desktop">
+    <UserControl.Resources>
+        <local:ChatEntryTemplateSelector x:Key="ChatTemplateSelector"
+            UserTemplate="{StaticResource UserBubbleTemplate}"
+            AssistantTemplate="{StaticResource AssistantBubbleTemplate}"
+            SystemStepTemplate="{StaticResource SystemStepTemplate}"
+            ErrorTemplate="{StaticResource ErrorTemplate}" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,20">
+        <StackPanel>
+            <TextBlock Text="Automation" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" />
+            <TextBlock Text="Saves a named list of commands, one per line, and replays them in order through the normal AI planner. Not a keystroke/mouse recorder. Optionally schedule a sequence to run itself - once, daily, weekly, or on an interval." Foreground="{StaticResource TextFaint}" FontSize="11" Margin="0,0,0,16" TextWrapping="Wrap" />
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.2*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="New sequence" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <TextBox x:Name="NameBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                 BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8"
+                                 ToolTip="Sequence name" />
+                        <TextBox x:Name="CommandsBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                 BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6" Height="140"
+                                 AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                 ToolTip="One command per line" Margin="0,0,0,8" />
+                        <Separator Margin="0,4,0,10" />
+                        <TextBlock Text="Schedule (optional)" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,8" />
+                        <ComboBox x:Name="ScheduleTypeCombo" Margin="0,0,0,8" SelectionChanged="ScheduleTypeCombo_SelectionChanged">
+                            <ComboBoxItem Content="None (manual only)" IsSelected="True" />
+                            <ComboBoxItem Content="Once" />
+                            <ComboBoxItem Content="Daily" />
+                            <ComboBoxItem Content="Weekly" />
+                            <ComboBoxItem Content="Every N minutes" />
+                        </ComboBox>
+
+                        <StackPanel x:Name="OncePanel" Visibility="Collapsed" Margin="0,0,0,8">
+                            <DatePicker x:Name="OnceDatePicker" Margin="0,0,0,6" />
+                            <TextBox x:Name="OnceTimeBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6"
+                                     ToolTip="Time, 24-hour HH:mm, e.g. 21:00" Text="21:00" />
+                        </StackPanel>
+
+                        <StackPanel x:Name="DailyPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBox x:Name="DailyTimeBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6"
+                                     ToolTip="Time, 24-hour HH:mm, e.g. 09:00" Text="09:00" />
+                        </StackPanel>
+
+                        <StackPanel x:Name="WeeklyPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                            <ComboBox x:Name="WeeklyDayCombo" Margin="0,0,0,6">
+                                <ComboBoxItem Content="Monday" IsSelected="True" />
+                                <ComboBoxItem Content="Tuesday" />
+                                <ComboBoxItem Content="Wednesday" />
+                                <ComboBoxItem Content="Thursday" />
+                                <ComboBoxItem Content="Friday" />
+                                <ComboBoxItem Content="Saturday" />
+                                <ComboBoxItem Content="Sunday" />
+                            </ComboBox>
+                            <TextBox x:Name="WeeklyTimeBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6"
+                                     ToolTip="Time, 24-hour HH:mm, e.g. 18:00" Text="18:00" />
+                        </StackPanel>
+
+                        <StackPanel x:Name="IntervalPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBox x:Name="IntervalMinutesBox" Background="#0E1420" Foreground="{StaticResource TextPrimary}"
+                                     BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" Padding="8,6"
+                                     ToolTip="Minutes between runs, e.g. 30" Text="30" />
+                        </StackPanel>
+
+                        <Button Content="Save sequence" Style="{StaticResource PillButton}" Background="{StaticResource AccentGradient}"
+                                Foreground="White" Click="Save_Click" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
+                    <StackPanel>
+                        <TextBlock Text="Saved sequences" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="16,14,16,8" />
+                        <ListBox x:Name="SequenceList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimary}" MaxHeight="280">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="12,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontWeight="Bold" />
+                                            <Button Grid.Column="1" Content="Run" Style="{StaticResource PillButton}" Padding="10,4" Margin="6,0,0,0" Click="Run_Click" Tag="{Binding}" />
+                                            <Button Grid.Column="2" Content="{Binding ScheduleToggleLabel}" Style="{StaticResource PillButton}" Padding="10,4" Margin="6,0,0,0" Click="ToggleSchedule_Click" Tag="{Binding}" Visibility="{Binding HasSchedule}" />
+                                            <Button Grid.Column="3" Content="Delete" Style="{StaticResource PillButton}" Padding="10,4" Margin="6,0,0,0" Click="Delete_Click" Tag="{Binding}" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding ScheduleSummary}" Foreground="{StaticResource TextFaint}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource Card}" Padding="0" MinHeight="240" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Run log" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" Margin="16,14,16,8" />
+                    <ItemsControl x:Name="RunLog" Margin="8,0,8,8" ItemTemplateSelector="{StaticResource ChatTemplateSelector}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Padding="0">
+                <StackPanel>
+                    <DockPanel Margin="16,14,16,8">
+                        <Button DockPanel.Dock="Right" Content="Refresh" Style="{StaticResource PillButton}" Padding="10,4" Click="RefreshReport_Click" />
+                        <TextBlock Text="Task Reports" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="Every automation run - manual or scheduled - with its actual outcome. Individual tool actions inside each run are in Task History." Foreground="{StaticResource TextFaint}" FontSize="11" Margin="16,0,16,8" TextWrapping="Wrap" />
+                    <ItemsControl x:Name="ReportList" Margin="8,0,8,12">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#171A21" CornerRadius="6" Padding="10,8" Margin="4">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding OutcomeLabel}" Foreground="{Binding OutcomeColor}" FontWeight="Bold" FontSize="11" />
+                                            <TextBlock Text="{Binding TitleLine}" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" TextWrapping="Wrap" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding DetailLine}" Foreground="{StaticResource TextDim}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="ReportEmptyText" Text="No automation runs yet." Foreground="{StaticResource TextFaint}" Margin="16,0,16,14" Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="StatusText" Foreground="{StaticResource TextDim}" Margin="0,12,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

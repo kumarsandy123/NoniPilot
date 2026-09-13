@@ -1,0 +1,115 @@
+<Window x:Class="NoniPilot.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="NoniPilot" Height="860" Width="1440" MinHeight="600" MinWidth="1000"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg}"
+        Closing="MainWindow_Closing">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="64" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,0,1" Padding="16,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="{StaticResource AccentGradient}" Margin="0,0,10,0">
+                        <TextBlock Text="N" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel>
+                        <TextBlock Text="NoniPilot" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+                        <TextBlock Text="Your Voice. Your Vision. Your Computer." FontSize="9" Foreground="{StaticResource TextFaint}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="1" Background="#151A26" CornerRadius="12" Padding="10,4" Margin="20,0,0,0" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="ProviderDot" Width="8" Height="8" Fill="{StaticResource Cyan}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock x:Name="StatusText" Text="Idle" Foreground="{StaticResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Button Grid.Column="3" x:Name="StopButton" Content="STOP" Style="{StaticResource PillButton}" Margin="10,0"
+                        Foreground="White" Click="StopButton_Click" Effect="{StaticResource GlowDanger}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button.Background>
+                        <SolidColorBrush Color="#B91C3C" />
+                    </Button.Background>
+                </Button>
+
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Margin="0,0,14,0">
+                        <TextBlock x:Name="ClockText" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="DateText" FontSize="10" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" />
+                    </StackPanel>
+
+                    <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource UserBubbleGradient}" Margin="0,0,8,0">
+                        <TextBlock x:Name="UserInitial" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock x:Name="GreetingText" FontSize="12" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="0,0,16,0" />
+
+                    <Button Content="&#x2013;" Style="{StaticResource IconButton}" Click="Minimize_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                    <Button x:Name="MaximizeButton" Content="&#x25A1;" Style="{StaticResource IconButton}" Click="Maximize_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                    <Button Content="&#x2715;" Style="{StaticResource IconButton}" Click="Close_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Body -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ListBox x:Name="NavList" Grid.Row="0" Background="Transparent" BorderThickness="0" Margin="0,10"
+                             ItemContainerStyle="{StaticResource SidebarNavItem}" SelectionChanged="NavList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Glyph}" FontSize="15" Width="24" />
+                                    <TextBlock Text="{Binding Label}" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="1" Margin="16,10">
+                        <Border Background="#151A26" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="NoniPilot v1.0" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" FontSize="11" />
+                                <TextBlock Text="Free Edition" Foreground="{StaticResource TextFaint}" FontSize="10" />
+                                <TextBlock Text="Local AI Ready - No Paid API Required" Foreground="{StaticResource Success}" FontSize="9" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="&quot;Work Smarter. Live Simpler.&quot;" Foreground="{StaticResource TextFaint}" FontSize="10" FontStyle="Italic" TextWrapping="Wrap" TextAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ContentControl x:Name="PageHost" Grid.Column="1" />
+        </Grid>
+    </Grid>
+</Window>
